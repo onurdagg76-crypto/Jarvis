@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI İstatistik Analizi</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#ffffff;--bg2:#f6f6f4;--bg3:#f0f0ed;
+    --text:#1a1a1a;--text2:#6b6b6b;--text3:#999;
+    --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+    --green:#1D9E75;--green-light:#E1F5EE;--green-dark:#0F6E56;
+    --purple:#534AB7;--purple-light:#EEEDFE;--purple-dark:#3C3489;
+    --radius:8px;--radius-lg:12px;
+  }
+  @media(prefers-color-scheme:dark){
+    :root{
+      --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
+      --text:#f5f5f5;--text2:#a1a1a6;--text3:#6c6c70;
+      --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+      --green-light:#0a3d2e;--purple-light:#1e1a4a;
+    }
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px}
+  .app{width:100%;max-width:680px;display:flex;flex-direction:column;gap:12px}
+
+  .key-screen{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:2rem;text-align:center;margin-top:2rem}
+  .key-logo{width:56px;height:56px;background:var(--green);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem}
+  .key-logo svg{width:28px;height:28px;fill:none;stroke:white;stroke-width:2.5;stroke-linecap:round}
+  .key-title{font-size:20px;font-weight:600;color:var(--text);margin-bottom:6px}
+  .key-sub{font-size:14px;color:var(--text2);margin-bottom:1.5rem;line-height:1.6}
+  .key-input{width:100%;border:0.5px solid var(--border2);border-radius:var(--radius);padding:11px 14px;font-size:14px;color:var(--text);background:var(--bg);margin-bottom:10px;font-family:monospace}
+  .key-input:focus{outline:none;border-color:var(--green)}
+  .key-btn{width:100%;background:var(--green);border:none;border-radius:var(--radius);padding:11px;font-size:15px;font-weight:500;color:white;cursor:pointer;margin-bottom:8px}
+  .key-btn:hover{background:var(--green-dark)}
+  .key-note{font-size:12px;color:var(--text3);line-height:1.6}
+  .key-link{color:var(--green);text-decoration:none}
+  .key-steps{text-align:left;background:var(--bg2);border-radius:var(--radius);padding:1rem;margin:1rem 0;font-size:13px;color:var(--text2);line-height:2}
+
+  .topbar{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px 16px;display:flex;align-items:center;gap:12px}
+  .logo{width:36px;height:36px;background:var(--green);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .logo svg{width:18px;height:18px;fill:none;stroke:white;stroke-width:2.5;stroke-linecap:round}
+  .app-title{font-size:15px;font-weight:600;color:var(--text)}
+  .app-sub{font-size:12px;color:var(--text2)}
+  .ai-badge{background:var(--green-light);color:var(--green-dark);font-size:11px;padding:3px 10px;border-radius:20px;margin-left:auto;white-space:nowrap;font-weight:500}
+  .reset-btn{background:transparent;border:0.5px solid var(--border2);border-radius:var(--radius);padding:5px 12px;font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap}
+  .reset-btn:hover{background:var(--bg2)}
+
+  .chat-wrap{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:12px;min-height:300px}
+  .msg{display:flex;gap:10px;align-items:flex-start}
+  .msg.user{flex-direction:row-reverse}
+  .avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;margin-top:2px}
+  .avatar.ai{background:var(--green-light);color:var(--green-dark)}
+  .avatar.user{background:var(--purple-light);color:var(--purple-dark)}
+  .bubble{max-width:88%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.55;color:var(--text)}
+  .bubble.ai{background:var(--bg2);border:0.5px solid var(--border);border-top-left-radius:4px}
+  .bubble.user{background:var(--purple-light);color:var(--purple-dark);border-top-right-radius:4px}
+  .bubble.result{background:var(--bg);border:0.5px solid var(--border);border-top-left-radius:4px;padding:14px}
+  .typing{display:flex;gap:5px;align-items:center;padding:4px 0}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 1.2s infinite}
+  .dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+  .opts-wrap{display:flex;flex-wrap:wrap;gap:6px;padding:0 0 0 40px}
+  .opt-chip{background:var(--bg);border:0.5px solid var(--border2);border-radius:20px;padding:7px 14px;font-size:13px;color:var(--text);cursor:pointer;transition:all .15s;line-height:1.3}
+  .opt-chip:hover{background:var(--green-light);border-color:var(--green);color:var(--green-dark)}
+
+  .input-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px}
+  .data-hint{font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.5;display:none}
+  .example-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+  .ex-tag{background:var(--bg2);border:0.5px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--text2);cursor:pointer;font-family:monospace}
+  .ex-tag:hover{border-color:var(--green);color:var(--green-dark)}
+  .input-row{display:flex;gap:8px;align-items:flex-end}
+  textarea.inp{flex:1;border:0.5px solid var(--border2);border-radius:var(--radius);padding:10px 14px;font-size:14px;color:var(--text);background:var(--bg);resize:none;font-family:inherit;line-height:1.4}
+  textarea.inp:focus{outline:none;border-color:var(--green)}
+  .send{width:44px;height:44px;background:var(--green);border:none;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .send:hover{background:var(--green-dark)}
+  .send:disabled{background:var(--border);cursor:not-allowed}
+  .send svg{width:18px;height:18px;fill:none;stroke:white;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+  .hint{font-size:11px;color:var(--text3);text-align:center;margin-top:4px}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:10px 0}
+  .stat-card{background:var(--bg2);border-radius:var(--radius);padding:10px 12px}
+  .stat-label{font-size:11px;color:var(--text2);margin-bottom:4px}
+  .stat-val{font-size:17px;font-weight:600;color:var(--text)}
+  .stat-sub{font-size:11px;color:var(--text3)}
+  .result-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px}
+  .result-interp{font-size:13px;color:var(--text2);line-height:1.6;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)}
+  .sig-badge{display:inline-block;font-size:12px;padding:3px 12px;border-radius:20px;margin-bottom:10px;font-weight:500}
+  .sig-yes{background:#EAF3DE;color:#27500A}
+  .sig-no{background:#FCEBEB;color:#791F1F}
+  .sig-border{background:#FAEEDA;color:#633806}
+  .new-btn{background:transparent;border:0.5px solid var(--green);border-radius:var(--radius);padding:8px 16px;font-size:13px;color:var(--green);cursor:pointer;margin-top:12px;font-family:inherit}
+  .new-btn:hover{background:var(--green-light)}
+  .logout-btn{background:transparent;border:none;font-size:11px;color:var(--text3);cursor:pointer;margin-top:6px;text-decoration:underline}
+
+  @media(max-width:480px){
+    body{padding:8px}
+    .stat-grid{grid-template-columns:1fr 1fr}
+    .bubble{max-width:92%}
+    .key-screen{padding:1.25rem}
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- API KEY SCREEN -->
+  <div class="key-screen" id="keyScreen">
+    <div class="key-logo">
+      <svg viewBox="0 0 24 24"><polyline points="2,18 8,10 13,14 19,5"/><circle cx="19" cy="5" r="2" fill="white" stroke="none"/></svg>
+    </div>
+    <div class="key-title">AI İstatistik Analizi</div>
+    <div class="key-sub">OpenRouter API key'inizi girin — ücretsiz modeller ile istatistiksel analiz yapın.</div>
+
+    <div class="key-steps">
+      <strong style="color:var(--text)">OpenRouter key nasıl alınır?</strong><br>
+      1. <a class="key-link" href="https://openrouter.ai" target="_blank">openrouter.ai</a> → Sign Up (ücretsiz)<br>
+      2. Sağ üstte profil → <strong>Keys</strong> → <strong>Create Key</strong><br>
+      3. <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">sk-or-v1-...</code> ile başlayan kodu kopyala<br>
+      4. Aşağıya yapıştır — ücretsiz modeller kullanılacak
+    </div>
+
+    <input class="key-input" id="apiKey" type="password" placeholder="sk-or-v1-..." />
+    <button class="key-btn" onclick="startApp()">Başla →</button>
+    <div class="key-note">Key yalnızca bu cihazın tarayıcısında saklanır, hiçbir yere iletilmez.</div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="mainApp" style="display:none;flex-direction:column;gap:12px">
+    <div class="topbar">
+      <div class="logo">
+        <svg viewBox="0 0 24 24"><polyline points="2,18 8,10 13,14 19,5"/><circle cx="19" cy="5" r="2" fill="white" stroke="none"/></svg>
+      </div>
+      <div>
+        <div class="app-title">AI İstatistik Analizi</div>
+        <div class="app-sub">OpenRouter · Otomatik ücretsiz model</div>
+      </div>
+      <span class="ai-badge">Ücretsiz</span>
+      <button class="reset-btn" onclick="resetChat()">↺ Sıfırla</button>
+    </div>
+
+    <div class="chat-wrap" id="chat"></div>
+    <div class="opts-wrap" id="optsArea"></div>
+
+    <div class="input-card">
+      <div class="data-hint" id="dataHint">
+        Verilerinizi girin — virgülle, boşlukla veya alt alta:
+        <div class="example-row">
+          <span class="ex-tag" onclick="fill('23.4, 25.1, 22.8, 26.3, 24.0')">Tek grup</span>
+          <span class="ex-tag" onclick="fill('G1: 23.4, 25.1, 22.8\nG2: 31.2, 29.8, 33.1')">İki grup</span>
+          <span class="ex-tag" onclick="fill('G1: 12,15,13,14\nG2: 18,21,19\nG3: 25,28,26,24')">Üç grup</span>
+        </div>
+      </div>
+      <div class="input-row">
+        <textarea class="inp" id="userInput" rows="2" placeholder="Araştırma konunuzu veya verilerinizi yazın..." onkeydown="handleKey(event)"></textarea>
+        <button class="send" id="sendBtn" onclick="sendMsg()">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="hint">Enter = gönder &nbsp;·&nbsp; Shift+Enter = yeni satır</div>
+    <button class="logout-btn" onclick="logout()">API key'i değiştir / çıkış</button>
+  </div>
+</div>
+
+<script>
+const MODEL = 'openrouter/auto';
+const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+const SYSTEM = `Sen bir biyoistatistik uzmanısın. Kullanıcının araştırma verilerini analiz ediyorsun. Türkçe konuş.
+
+AKIŞ:
+1. Kullanıcı araştırma konusu/veri yapısını açıklayınca kısa sorular sor: grup sayısı, bağımlılık (paired?), veri türü, normallik.
+2. Uygun testi belirle ve kısaca neden seçtiğini açıkla.
+3. Kullanıcı ham veriyi verince (virgülle/boşlukla/satır satır sayılar) GERÇEK hesaplama yap.
+4. Sonuçları JSON formatında döndür.
+
+HESAPLAMA KURALLARI:
+- t-test: t=(x1-x2)/sqrt(s1²/n1+s2²/n2), Welch df=(s1²/n1+s2²/n2)²/((s1²/n1)²/(n1-1)+(s2²/n2)²/(n2-1)), p değeri t dağılımından
+- Paired t-test: farklar dizisi → ortalama/SEM, df=n-1
+- Mann-Whitney U: her gruptaki değerleri rankla, U hesapla, z=(U-n1*n2/2)/sqrt(n1*n2*(n1+n2+1)/12), p=2*(1-Φ(|z|))
+- One-way ANOVA: grand mean, SS_between, SS_within, F=MS_between/MS_within
+- Chi-square: (O-E)²/E toplamı, df=(satır-1)*(sütun-1)
+- Her zaman: n, ortalama, SD, SEM, 95%CI=[mean±1.96*SEM], Cohen's d=(x1-x2)/pooled_sd
+- p yaklaşık: t için p≈2*(1-Φ(|t|*sqrt(df/(df+t²))*...)) — standart normal yaklaşımı kullan
+
+SADECE JSON döndür, başka hiçbir şey yazma:
+{
+  "type": "question" | "test_selected" | "result",
+  "message": "Türkçe mesaj",
+  "test": "test adı",
+  "show_data_hint": true,
+  "options": ["seçenek1","seçenek2"],
+  "stats": {
+    "n_groups": [n1,n2],
+    "means": [ort1,ort2],
+    "sds": [sd1,sd2],
+    "statistic_name": "t",
+    "statistic_value": 2.34,
+    "df": 18,
+    "p_value": 0.031,
+    "effect_size_name": "Cohen d",
+    "effect_size_value": 0.85,
+    "ci_95": [-0.5, 8.2]
+  },
+  "interpretation": "Türkçe bilimsel yorum",
+  "significance": "significant"
+}`;
+
+let history = [];
+let apiKey = '';
+
+function startApp() {
+  const k = document.getElementById('apiKey').value.trim();
+  if (!k.startsWith('sk-or')) {
+    alert('Geçerli bir OpenRouter key girin (sk-or-v1- ile başlamalı)');
+    return;
+  }
+  apiKey = k;
+  localStorage.setItem('or_key', k);
+  document.getElementById('keyScreen').style.display = 'none';
+  const ma = document.getElementById('mainApp');
+  ma.style.display = 'flex';
+  init();
+}
+
+function logout() {
+  localStorage.removeItem('or_key');
+  apiKey = '';
+  history = [];
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('keyScreen').style.display = 'block';
+  document.getElementById('apiKey').value = '';
+}
+
+window.onload = () => {
+  const saved = localStorage.getItem('or_key');
+  if (saved && saved.startsWith('sk-or')) {
+    apiKey = saved;
+    document.getElementById('keyScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'flex';
+    init();
+  }
+};
+
+function addMsg(role, content, type) {
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
+  const av = document.createElement('div');
+  av.className = 'avatar ' + (role === 'user' ? 'user' : 'ai');
+  av.textContent = role === 'user' ? 'SİZ' : 'AI';
+  const bub = document.createElement('div');
+  bub.className = 'bubble ' + (type === 'result' ? 'result' : role === 'user' ? 'user' : 'ai');
+  bub.innerHTML = content;
+  wrap.appendChild(av);
+  wrap.appendChild(bub);
+  chat.appendChild(wrap);
+  bub.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return bub;
+}
+
+function showTyping() {
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ai';
+  wrap.id = 'typingMsg';
+  wrap.innerHTML = '<div class="avatar ai">AI</div><div class="bubble ai"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>';
+  chat.appendChild(wrap);
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+function hideTyping() {
+  const t = document.getElementById('typingMsg');
+  if (t) t.remove();
+}
+
+function showOpts(opts) {
+  const area = document.getElementById('optsArea');
+  area.innerHTML = '';
+  if (!opts || !opts.length) return;
+  opts.forEach(o => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-chip';
+    btn.textContent = o;
+    btn.onclick = () => {
+      area.innerHTML = '';
+      addMsg('user', o);
+      history.push({ role: 'user', content: o });
+      callAI();
+    };
+    area.appendChild(btn);
+  });
+}
+
+function renderResult(p) {
+  const s = p.stats || {};
+  let h = '';
+  h += `<div class="result-title">${p.test || 'Analiz Sonucu'}</div>`;
+  const sc = p.significance === 'significant' ? 'sig-yes' : p.significance === 'borderline' ? 'sig-border' : 'sig-no';
+  const st = p.significance === 'significant' ? 'İstatistiksel olarak anlamlı (p < 0.05)' : p.significance === 'borderline' ? 'Sınırda anlamlı (p ≈ 0.05)' : 'Anlamlı değil (p ≥ 0.05)';
+  h += `<span class="sig-badge ${sc}">${st}</span>`;
+  h += '<div class="stat-grid">';
+  if (s.statistic_name && s.statistic_value !== undefined)
+    h += `<div class="stat-card"><div class="stat-label">${s.statistic_name} istatistiği</div><div class="stat-val">${(+s.statistic_value).toFixed(3)}</div></div>`;
+  if (s.df !== undefined)
+    h += `<div class="stat-card"><div class="stat-label">df</div><div class="stat-val">${typeof s.df === 'number' ? (+s.df).toFixed(1) : s.df}</div></div>`;
+  if (s.p_value !== undefined) {
+    const pv = +s.p_value;
+    h += `<div class="stat-card"><div class="stat-label">p değeri</div><div class="stat-val">${pv < 0.001 ? '< 0.001' : pv.toFixed(4)}</div></div>`;
+  }
+  if (s.effect_size_name && s.effect_size_value !== undefined)
+    h += `<div class="stat-card"><div class="stat-label">${s.effect_size_name}</div><div class="stat-val">${(+s.effect_size_value).toFixed(3)}</div><div class="stat-sub">etki büyüklüğü</div></div>`;
+  h += '</div>';
+  if (s.means && s.means.length) {
+    h += '<div class="stat-grid">';
+    s.means.forEach((m, i) => {
+      const sd = s.sds && s.sds[i] != null ? ` ± ${(+s.sds[i]).toFixed(2)}` : '';
+      const n = s.n_groups && s.n_groups[i] != null ? ` (n=${s.n_groups[i]})` : '';
+      h += `<div class="stat-card"><div class="stat-label">Grup ${i + 1}${n}</div><div class="stat-val">${(+m).toFixed(2)}</div><div class="stat-sub">ort${sd}</div></div>`;
+    });
+    h += '</div>';
+  }
+  if (s.ci_95 && s.ci_95.length === 2)
+    h += `<div style="font-size:12px;color:var(--text2);margin-top:6px">95% Güven Aralığı: [${(+s.ci_95[0]).toFixed(3)}, ${(+s.ci_95[1]).toFixed(3)}]</div>`;
+  if (p.interpretation)
+    h += `<div class="result-interp">${p.interpretation}</div>`;
+  h += `<button class="new-btn" onclick="resetChat()">↺ Yeni analiz başlat</button>`;
+  return h;
+}
+
+async function callAI() {
+  document.getElementById('sendBtn').disabled = true;
+  document.getElementById('optsArea').innerHTML = '';
+  showTyping();
+
+  try {
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey,
+        'HTTP-Referer': 'https://onurdagg76-crypto.github.io',
+        'X-Title': 'AI Istatistik Analizi'
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1200,
+        messages: [
+          { role: 'system', content: SYSTEM },
+          ...history.slice(-12)
+        ]
+      })
+    });
+
+    const data = await resp.json();
+    hideTyping();
+
+    if (data.error) {
+      addMsg('ai', 'Hata: ' + (data.error.message || JSON.stringify(data.error)));
+      document.getElementById('sendBtn').disabled = false;
+      return;
+    }
+
+    const raw = data.choices?.[0]?.message?.content || '';
+    history.push({ role: 'assistant', content: raw });
+
+    let parsed;
+    try {
+      const clean = raw.replace(/```json|```/g, '').trim();
+      const jsonMatch = clean.match(/\{[\s\S]*\}/);
+      parsed = JSON.parse(jsonMatch ? jsonMatch[0] : clean);
+    } catch {
+      parsed = { type: 'question', message: raw, options: [] };
+    }
+
+    if (parsed.show_data_hint) {
+      document.getElementById('dataHint').style.display = 'block';
+    }
+
+    if (parsed.type === 'result') {
+      addMsg('ai', renderResult(parsed), 'result');
+      if (parsed.message) setTimeout(() => addMsg('ai', parsed.message), 400);
+    } else {
+      addMsg('ai', parsed.message || raw);
+      showOpts(parsed.options || []);
+    }
+
+  } catch (e) {
+    hideTyping();
+    addMsg('ai', 'Bağlantı hatası: ' + e.message + '<br>İnternet bağlantınızı kontrol edin.');
+  }
+
+  document.getElementById('sendBtn').disabled = false;
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+}
+
+function sendMsg() {
+  const inp = document.getElementById('userInput');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  document.getElementById('optsArea').innerHTML = '';
+  addMsg('user', txt.replace(/\n/g, '<br>'));
+  history.push({ role: 'user', content: txt });
+  inp.value = '';
+  callAI();
+}
+
+function fill(txt) {
+  document.getElementById('userInput').value = txt;
+  document.getElementById('userInput').focus();
+}
+
+function resetChat() {
+  history = [];
+  document.getElementById('chat').innerHTML = '';
+  document.getElementById('optsArea').innerHTML = '';
+  document.getElementById('dataHint').style.display = 'none';
+  init();
+}
+
+function init() {
+  addMsg('ai', 'Merhaba! Araştırma verilerinizi analiz etmek için buradayım.<br><br>Araştırma konunuzu ve veri yapınızı anlatın — uygun istatistiksel testi belirleyip gerçek hesaplamayı yapacağım. p değeri, etki büyüklüğü ve bilimsel yorum anında hazır.');
+  showOpts(['İki grup karşılaştırmam var', 'Üç veya daha fazla grup', 'Tek grup analizi', 'Kategorik / oran verisi var']);
+}
+</script>
+</body>
+</html>
